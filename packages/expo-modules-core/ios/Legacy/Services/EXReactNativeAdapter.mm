@@ -282,37 +282,27 @@ EX_REGISTER_MODULE();
 
 - (void)addUIBlock:(void (^)(UIView *view))block forView:(id)viewId
 {
-  __weak EXReactNativeAdapter *weakSelf = self;
-  dispatch_async(_bridge.uiManager.methodQueue, ^{
-    __strong EXReactNativeAdapter *strongSelf = weakSelf;
-    if (strongSelf) {
-      [strongSelf.bridge.uiManager addUIBlock:^(__unused RCTUIManager *uiManager, NSDictionary<NSNumber *, UIView *> *viewRegistry) {
-        UIView *view = viewRegistry[viewId];
-        block(view);
-      }];
+  __weak RCTSurfacePresenter *surfacePresenter = [_bridge surfacePresenter];
+
+  [[_bridge uiManager] addUIBlock:^(RCTUIManager *uiManager, NSDictionary<NSNumber *, UIView *> *viewRegistry) {
+#if RN_FABRIC_ENABLED
+    if (!surfacePresenter) {
+      block(nil);
+      return;
     }
-  });
+    UIView<RCTComponentViewProtocol> *componentView = [surfacePresenter.mountingManager.componentViewRegistry findComponentViewWithTag:[(NSNumber *)viewId integerValue]];
+    UIView *view = [(ExpoFabricViewObjC *)componentView contentView];
+#else
+    UIView *view = viewRegistry[viewId];
+#endif
+    block(view);
+  }];
 }
 
 - (void)executeUIBlock:(void (^)(UIView *view))block forView:(id)viewId
 {
-  __weak EXReactNativeAdapter *weakSelf = self;
-  dispatch_async(_bridge.uiManager.methodQueue, ^{
-    __strong EXReactNativeAdapter *strongSelf = weakSelf;
-    if (strongSelf) {
-      [strongSelf.bridge.uiManager addUIBlock:^(__unused RCTUIManager *uiManager, NSDictionary<NSNumber *, UIView *> *viewRegistry) {
-#if RN_FABRIC_ENABLED
-        RCTSurfacePresenter *surfacePresenter = strongSelf.bridge.surfacePresenter;
-        UIView<RCTComponentViewProtocol> *componentView = [surfacePresenter.mountingManager.componentViewRegistry findComponentViewWithTag:[viewId integerValue]];
-        UIView *view = [(ExpoFabricViewObjC *)componentView contentView];
-#else
-        UIView *view = viewRegistry[viewId];
-#endif
-        block(view);
-      }];
-      [strongSelf.bridge.uiManager setNeedsLayout];
-    }
-  });
+  [self addUIBlock:block forView:viewId];
+  [[_bridge uiManager] setNeedsLayout];
 }
 
 - (BOOL)isApplicationStateBackground

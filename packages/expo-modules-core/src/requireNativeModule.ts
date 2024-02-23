@@ -4,12 +4,18 @@ import NativeModulesProxy from './NativeModulesProxy';
 
 type ExpoObject = {
   modules:
-    | undefined
-    | {
-        [key: string]: any;
-      };
+  | undefined
+  | {
+    [key: string]: any;
+  };
   uuidv4: () => string;
   uuidv5: (name: string, namespace: string) => string;
+  getViewConfig(viewName: string): ExpoViewConfig | null;
+};
+
+type ExpoViewConfig = {
+  validAttributes: Record<string, any>;
+  directEventTypes: Record<string, { registrationName: string }>;
 };
 
 declare global {
@@ -54,7 +60,7 @@ export function requireOptionalNativeModule<ModuleType = any>(
  * Ensures that the native modules are installed in the current runtime.
  * Otherwise, it synchronously calls a native function that installs them.
  */
-function ensureNativeModulesAreInstalled(): void {
+export function ensureNativeModulesAreInstalled(): void {
   if (globalThis.expo) {
     return;
   }

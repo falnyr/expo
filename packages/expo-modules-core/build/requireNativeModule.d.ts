@@ -4,6 +4,13 @@ type ExpoObject = {
     };
     uuidv4: () => string;
     uuidv5: (name: string, namespace: string) => string;
+    getViewConfig(viewName: string): ExpoViewConfig | null;
+};
+type ExpoViewConfig = {
+    validAttributes: Record<string, any>;
+    directEventTypes: Record<string, {
+        registrationName: string;
+    }>;
 };
 declare global {
     var expo: ExpoObject | undefined;
@@ -26,5 +33,10 @@ export declare function requireNativeModule<ModuleType = any>(moduleName: string
  * @returns Object representing the native module or `null` when it cannot be found.
  */
 export declare function requireOptionalNativeModule<ModuleType = any>(moduleName: string): ModuleType | null;
+/**
+ * Ensures that the native modules are installed in the current runtime.
+ * Otherwise, it synchronously calls a native function that installs them.
+ */
+export declare function ensureNativeModulesAreInstalled(): void;
 export {};
 //# sourceMappingURL=requireNativeModule.d.ts.map

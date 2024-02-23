@@ -1,5 +1,7 @@
 import React from 'react';
-import { findNodeHandle, NativeModules, requireNativeComponent } from 'react-native';
+import { findNodeHandle, NativeModules } from 'react-native';
+import { createViewConfig } from 'react-native/Libraries/NativeComponent/ViewConfig';
+import createReactNativeComponentClass from 'react-native/Libraries/Renderer/shims/createReactNativeComponentClass';
 import { requireNativeModule } from './requireNativeModule';
 // To make the transition from React Native's `requireNativeComponent` to Expo's
 // `requireNativeViewManager` as easy as possible, `requireNativeViewManager` is a drop-in
@@ -13,6 +15,23 @@ import { requireNativeModule } from './requireNativeModule';
  * A map that caches registered native components.
  */
 const nativeComponentsCache = new Map();
+function requireNativeComponent(viewName) {
+    return createReactNativeComponentClass(viewName, () => {
+        // Make sure that `globalThis.expo` is available.
+        // To be removed when only the new architecture is supported.
+        // ensureNativeModulesAreInstalled();
+        const viewModuleName = viewName.replace('ViewManagerAdapter_', '');
+        // console.log('DUPA', globalThis.expo);
+        const expoViewConfig = globalThis.expo?.getViewConfig(viewModuleName);
+        if (!expoViewConfig) {
+            console.warn('Unable to get the view config for %s', viewModuleName);
+        }
+        return createViewConfig({
+            uiViewClassName: viewName,
+            ...expoViewConfig,
+        });
+    });
+}
 /**
  * Requires a React Native component from cache if possible. This prevents
  * "Tried to register two views with the same name" errors on fast refresh, but
